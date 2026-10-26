@@ -45,11 +45,11 @@ screensaver.
 Settings are constants near the top of each class:
 
 - `SpawnChance`, `MinGap`: how dense the rain is
-- `FizzleChance`, `BrokenChance`, `MidStartChance`: how many streams fade out early, have gaps, or appear partway down
+- `FizzleChance`, `BrokenChance`, `MidStartChance`, `DimChance`: how many streams fade out early, have gaps, appear partway down, or are drawn dimmer for depth
 - `CellW`, `CellH` and the font size: character size
 - `rnd.Next(10, 50)`: trail length range
 - `Interval = 33`: frame rate (about 30 fps)
-- `MatrixGlow.cs` only: `GlowStrength` and the number of blur passes
+- `MatrixGlow.cs` only: `GlowStrength`, the number of blur passes, and `backdrop` (background colour) in the composite shader
 
 ## Checking the GPU version
 

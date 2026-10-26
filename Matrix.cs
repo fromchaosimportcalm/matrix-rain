@@ -104,6 +104,7 @@ class Drop
     public float Pos, Speed, Decay;
     public int End; // row where it stops; above the bottom if it fizzles out
     public float Gap; // chance to skip a row, for broken streams
+    public float Peak; // below 1 for dimmer streams that look further back
 }
 
 class RainForm : Form
@@ -113,6 +114,7 @@ class RainForm : Form
     const double FizzleChance = 0.35; // drops that fade out before the bottom
     const double BrokenChance = 0.3;  // streams with gaps in them
     const double MidStartChance = 0.2; // drops that appear partway down
+    const double DimChance = 0.3;      // streams drawn dimmer, for depth
 
     readonly Glyphs glyphs;
     readonly Random rnd;
@@ -181,7 +183,7 @@ class RainForm : Form
                 {
                     if (drop.Gap > 0 && rnd.NextDouble() < drop.Gap) continue;
                     int i = r * cols + c;
-                    bright[i] = 1;
+                    bright[i] = drop.Peak;
                     decay[i] = drop.Decay;
                     glyph[i] = (byte)rnd.Next(glyphs.Count);
                 }
@@ -203,7 +205,8 @@ class RainForm : Form
                 int start = rnd.NextDouble() < MidStartChance ? rnd.Next(rows / 2) : -1;
                 int end = rnd.NextDouble() < FizzleChance ? rnd.Next(Math.Max(start + 5, rows / 4), rows) : rows;
                 float gap = rnd.NextDouble() < BrokenChance ? 0.2f + (float)rnd.NextDouble() * 0.4f : 0;
-                list.Add(new Drop { Pos = start, Speed = speed, Decay = speed / trail, End = end, Gap = gap });
+                float peak = rnd.NextDouble() < DimChance ? 0.4f + (float)rnd.NextDouble() * 0.35f : 1;
+                list.Add(new Drop { Pos = start, Speed = speed, Decay = peak * speed / trail, End = end, Gap = gap, Peak = peak });
             }
         }
     }
@@ -219,7 +222,7 @@ class RainForm : Form
             g.CompositingMode = CompositingMode.SourceCopy;
             for (int i = 0; i < bright.Length; i++)
             {
-                int level = isHead[i] ? Glyphs.Levels + 1 : (int)Math.Ceiling(bright[i] * Glyphs.Levels);
+                int level = isHead[i] && bright[i] >= 1 ? Glyphs.Levels + 1 : (int)Math.Ceiling(bright[i] * Glyphs.Levels);
                 if (level == drawnLevel[i] && (level == 0 || glyph[i] == drawnGlyph[i])) continue;
 
                 int x = (i % cols) * Glyphs.CellW, y = (i / cols) * Glyphs.CellH;

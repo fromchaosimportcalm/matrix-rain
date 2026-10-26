@@ -70,6 +70,7 @@ class Drop
     public float Pos, Speed, Decay;
     public int End; // row where it stops; above the bottom if it fizzles out
     public float Gap; // chance to skip a row, for broken streams
+    public float Peak; // below 1 for dimmer streams that look further back
 }
 
 class Rain
@@ -79,6 +80,7 @@ class Rain
     const double FizzleChance = 0.35; // drops that fade out before the bottom
     const double BrokenChance = 0.3;  // streams with gaps in them
     const double MidStartChance = 0.2; // drops that appear partway down
+    const double DimChance = 0.3;      // streams drawn dimmer, for depth
 
     public readonly int Cols, Rows;
     readonly Random rnd;
@@ -130,7 +132,7 @@ class Rain
                 {
                     if (drop.Gap > 0 && rnd.NextDouble() < drop.Gap) continue;
                     int i = r * Cols + c;
-                    bright[i] = 1;
+                    bright[i] = drop.Peak;
                     decay[i] = drop.Decay;
                     glyph[i] = (byte)rnd.Next(glyphCount);
                 }
@@ -152,7 +154,8 @@ class Rain
                 int start = rnd.NextDouble() < MidStartChance ? rnd.Next(Rows / 2) : -1;
                 int end = rnd.NextDouble() < FizzleChance ? rnd.Next(Math.Max(start + 5, Rows / 4), Rows) : Rows;
                 float gap = rnd.NextDouble() < BrokenChance ? 0.2f + (float)rnd.NextDouble() * 0.4f : 0;
-                list.Add(new Drop { Pos = start, Speed = speed, Decay = speed / trail, End = end, Gap = gap });
+                float peak = rnd.NextDouble() < DimChance ? 0.4f + (float)rnd.NextDouble() * 0.35f : 1;
+                list.Add(new Drop { Pos = start, Speed = speed, Decay = peak * speed / trail, End = end, Gap = gap, Peak = peak });
             }
         }
     }
@@ -227,7 +230,7 @@ void main() {
     ivec2 local = ivec2(mod(p, cellSize));
     float a = texelFetch(atlas, ivec2(g * int(cellSize.x) + local.x, local.y), 0).r;
     vec3 trail = vec3(0.5 * b * b * b, 0.16 + 0.84 * b, 0.1 + 0.65 * pow(b, 1.5));
-    vec3 head = vec3(0.8, 1.0, 0.96);
+    vec3 head = vec3(0.8, 1.0, 0.96) * b;
     color = vec4(mix(trail, head, c.b) * a, 1.0);
 }";
 
@@ -269,7 +272,8 @@ uniform float strength;
 in vec2 uv;
 out vec4 color;
 void main() {
-    color = vec4(texture(scene, uv).rgb + texture(bloom, uv).rgb * strength, 1.0);
+    vec3 backdrop = vec3(0.004, 0.02, 0.03); // the film's blue-black, not pure black
+    color = vec4(backdrop + texture(scene, uv).rgb + texture(bloom, uv).rgb * strength, 1.0);
 }";
 }
 
