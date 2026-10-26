@@ -13,6 +13,8 @@ Two versions:
 
 Both use mirrored half-width katakana and digits, near-white leading characters,
 teal-green trails that fade to black, and characters that flicker as they fall.
+Like the film, some streams are broken up, some are short bursts, some appear
+partway down, and some fade out before reaching the bottom.
 
 ## Build
 
@@ -43,6 +45,7 @@ screensaver.
 Settings are constants near the top of each class:
 
 - `SpawnChance`, `MinGap`: how dense the rain is
+- `FizzleChance`, `BrokenChance`, `MidStartChance`: how many streams fade out early, have gaps, or appear partway down
 - `CellW`, `CellH` and the font size: character size
 - `rnd.Next(10, 50)`: trail length range
 - `Interval = 33`: frame rate (about 30 fps)

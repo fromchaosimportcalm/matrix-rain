@@ -68,12 +68,17 @@ static class Program
 class Drop
 {
     public float Pos, Speed, Decay;
+    public int End; // row where it stops; above the bottom if it fizzles out
+    public float Gap; // chance to skip a row, for broken streams
 }
 
 class Rain
 {
     const double SpawnChance = 0.03; // per column per frame
     const int MinGap = 6;            // rows between drops in one column
+    const double FizzleChance = 0.35; // drops that fade out before the bottom
+    const double BrokenChance = 0.3;  // streams with gaps in them
+    const double MidStartChance = 0.2; // drops that appear partway down
 
     public readonly int Cols, Rows;
     readonly Random rnd;
@@ -121,29 +126,33 @@ class Rain
                 int before = (int)Math.Floor(drop.Pos);
                 drop.Pos += drop.Speed;
                 int after = (int)Math.Floor(drop.Pos);
-                for (int r = Math.Max(0, before + 1); r <= after && r < Rows; r++)
+                for (int r = Math.Max(0, before + 1); r <= after && r < drop.End; r++)
                 {
+                    if (drop.Gap > 0 && rnd.NextDouble() < drop.Gap) continue;
                     int i = r * Cols + c;
                     bright[i] = 1;
                     decay[i] = drop.Decay;
                     glyph[i] = (byte)rnd.Next(glyphCount);
                 }
-                if (after >= 0 && after < Rows)
+                if (after >= 0 && after < drop.End)
                 {
                     int i = after * Cols + c;
                     isHead[i] = true;
                     heads.Add(i);
                     if (rnd.Next(3) == 0) glyph[i] = (byte)rnd.Next(glyphCount);
                 }
-                if (after >= Rows) list.RemoveAt(d);
+                if (after >= drop.End) list.RemoveAt(d);
             }
 
             bool roomAtTop = list.Count == 0 || list[list.Count - 1].Pos > MinGap;
             if (roomAtTop && rnd.NextDouble() < SpawnChance)
             {
                 float speed = 0.3f + (float)rnd.NextDouble() * 0.7f;
-                int trail = rnd.Next(10, 50);
-                list.Add(new Drop { Pos = -1, Speed = speed, Decay = speed / trail });
+                int trail = rnd.Next(4) == 0 ? rnd.Next(3, 10) : rnd.Next(10, 50);
+                int start = rnd.NextDouble() < MidStartChance ? rnd.Next(Rows / 2) : -1;
+                int end = rnd.NextDouble() < FizzleChance ? rnd.Next(Math.Max(start + 5, Rows / 4), Rows) : Rows;
+                float gap = rnd.NextDouble() < BrokenChance ? 0.2f + (float)rnd.NextDouble() * 0.4f : 0;
+                list.Add(new Drop { Pos = start, Speed = speed, Decay = speed / trail, End = end, Gap = gap });
             }
         }
     }
